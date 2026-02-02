@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RamjiSoni.me | Portfolio</title>
+
+  <style>
+    /* ========== GLOBAL ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: #f8f9fb;
+      color: #333;
+      line-height: 1.6;
+      padding: 0;
+    }
+
+    /* ========== NAVIGATION ========== */
+    nav {
+      position: sticky;
+      top: 0;
+      background: #0078d7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 30px;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: white;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: #ffe400;
+    }
+
+    /* ========== HEADER ========== */
+    header {
+      text-align: center;
+      padding: 40px 20px 30px;
+      border-bottom: 3px solid #0078d7;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      color: #0078d7;
+    }
+
+    header h3 {
+      color: #555;
+      font-weight: 500;
+      margin: 10px 0 20px;
+    }
+
+    header img {
+      border-radius: 50%;
+      width: 140px;
+      height: 140px;
+      object-fit: cover;
+      border: 3px solid #0078d7;
+      transition: 0.4s ease;
+    }
+
+    header img:hover {
+      transform: scale(1.08);
+    }
+
+    /* ========== SECTIONS ========== */
+    section {
+      background: #fff;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+      margin: 40px auto;
+      max-width: 900px;
+    }
+
+    h2 {
+      color: #0078d7;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #0078d7;
+      display: inline-block;
+      padding-bottom: 5px;
+    }
+
+    ul {
+      margin: 10px 0 15px 25px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    h4 {
+      margin-top: 10px;
+      color: #555;
+    }
+
+    /* ========== FOOTER ========== */
+    footer {
+      text-align: center;
+      padding: 25px;
+      background: #0078d7;
+      color: #fff;
+      border-radius: 0;
+      margin-top: 30px;
+    }
+
+    footer li {
+      list-style: none;
+      margin-bottom: 8px;
+    }
+
+    footer p {
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
+
+    /* ========== BUTTON ========== */
+    button {
+      background: #ffe400;
+      color: #333;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: 0.3s ease;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #ffcf00;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 768px) {
+      nav ul {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      header h1 {
+        font-size: 2rem;
+      }
+
+      section {
+        padding: 25px;
+        margin: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ====== NAVIGATION BAR ====== -->
+  <nav>
+    <ul>
+      <li><a href="#home">Home</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#experience">Experience</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- ====== HEADER ====== -->
+  <header id="home">
+    <h1><i><u>Ramji Soni</u></i></h1>
+    <h3>Software Engineer | Front-end Dev | Data Analytics | Medicaps University</h3>
+    <img src="circle.jpg" alt="Profile Photo">
+  </header>
+
+  <!-- ====== ABOUT ====== -->
+  <section id="about">
+    <h2><i>About Me</i></h2>
+    <p>Hello Everyone, my name is <b>Ramji Soni</b>, a final-year student at <i>Medicaps University</i> pursuing a Bachelor of Technology in Information Technology.</p>
+    <p>Alongside my studies, I’ve been running a small business, gaining real-world experience in client communication and management. I enjoy cleaning and analyzing complex datasets, which shaped my data analytics journey. During my 6th semester, I completed an internship using the Alteryx tool, which enhanced my data processing efficiency.</p>
+    <ul>
+      <li>Garments Sublic School</li>
+      <li>Medi-Caps University</li>
+    </ul>
+  </section>
+
+  <!-- ====== SKILLS ====== -->
+  <section id="skills">
+    <h2><i>Skills</i></h2>
+    <h4>Languages</h4>
+    <ul>
+      <li>Python</li>
+      <li>MySQL</li>
+      <li>HTML, CSS</li>
+    </ul>
+    <h4>Frameworks</h4>
+    <ul>
+      <li>Python Libraries (Pandas, NumPy, Matplotlib)</li>
+      <li>Vue.js</li>
+      <li>Angular, Django</li>
+    </ul>
+  </section>
+
+  <!-- ====== EXPERIENCE ====== -->
+  <section id="experience">
+    <h2><i>Work Experience</i></h2>
+    <h4>Internships</h4>
+    <ul>
+      <li>Deloitte -- Data Analytics Job Simulation</li>
+      <li>Infosys Springboard</li>
+      <li>C9 Pinak Infolabs</li>
+    </ul>
+  </section>
+
+  <!-- ====== PROJECTS ====== -->
+  <section id="projects">
+    <h2><i>Projects</i></h2>
+    <div>
+      <h3>Student Management System</h3>
+      <ul>
+        <li>A basic CRUD application using Java and MySQL to manage student records.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>Personal Portfolio Website</h3>
+      <ul>
+        <li>A responsive portfolio website to showcase my profile and projects.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ====== CONTACT ====== -->
+  <footer id="contact">
+    <h2><i>Contact Support</i></h2>
+    <ul>
+      <li><i>Email:</i> Ramjisoni859@gmail.com</li>
+      <li><i>WhatsApp:</i> 9589855646</li>
+      <li><i>LinkedIn:</i> Ramji Soni</li>
+    </ul>
+    <button onclick="showContact()">Contact Me</button>
+    <p>© 2025 Ramji Soni. All rights reserved.</p>
+  </footer>
+
+  <!-- ====== JAVASCRIPT ====== -->
+  <script>
+    function showContact() {
+      alert("📧 You can reach me at: Ramjisoni859@gmail.com");
+    }
+  </script>
+</body>
+</html>

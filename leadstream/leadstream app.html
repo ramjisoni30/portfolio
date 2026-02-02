@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadStream - HSR Motors Lead Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .sidebar-icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 96;
+            max-height: 450px;
+        }
+        #leadDetailPanel {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(100%);
+        }
+        #leadDetailPanel.open {
+            transform: translateX(0);
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .bg-status-new { background-color: #dbeafe; color: #1e40af; }
+        .bg-status-contacted { background-color: #ffedd5; color: #9a3412; }
+        .bg-status-qualified { background-color: #d1fae5; color: #065f46; }
+        .bg-status-lost { background-color: #fee2e2; color: #991b1b; }
+        .bg-status-timing { background-color: #e0e7ff; color: #4338ca; }
+        .activity-item {
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        /* Custom spinner for loading states */
+        .spinner {
+            border-top-color: transparent !important;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+    <div class="flex h-screen bg-slate-100">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-900 text-slate-200 flex flex-col">
+            <div class="h-16 flex items-center justify-center border-b border-slate-700">
+                <h1 class="text-2xl font-bold text-white tracking-wider">LeadStream</h1>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="#dashboard" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-700 hover:text-white" data-view="dashboard">
+                    <span class="sidebar-icon mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3,3V11H11V3H3M9,9H5V5H9V9M3,13V21H11V13H3M9,19H5V15H9V19M13,3V11H21V3H13M19,9H15V5H19V9M13,13V21H21V13H13M19,19H15V15H19V19Z" /></svg>
+                    </span>
+                    Dashboard
+                </a>
+                <a href="#leads" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-700 hover:text-white" data-view="leads">
+                    <span class="sidebar-icon mr-3">
+                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" /></svg>
+                    </span>
+                    Leads
+                </a>
+                <a href="#automation" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-700 hover:text-white" data-view="automation">
+                    <span class="sidebar-icon mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.95 7.05L15.54 5.64L13.41 7.76L12 6.34L10.59 7.76L8.46 5.64L7.05 7.05L9.17 9.17L7.76 10.59L6.34 12L7.76 13.41L5.64 15.54L7.05 16.95L9.17 14.83L10.59 16.24L12 17.66L13.41 16.24L14.83 14.83L16.95 16.95L18.36 15.54L16.24 13.41L17.66 12L16.24 10.59L14.83 9.17L16.95 7.05M12 2C17.5 2 22 6.5 22 12S17.5 22 12 22 2 17.5 2 12 6.5 2 12 2Z" /></svg>
+                    </span>
+                    Automation Hub
+                </a>
+                <!-- NEW: Help & Settings Link -->
+                <a href="#settings" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-md hover:bg-slate-700 hover:text-white" data-view="settings">
+                    <span class="sidebar-icon mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5A3.5 3.5 0 0 1 15.5 12A3.5 3.5 0 0 1 12 15.5M19.43 12.97C19.47 12.65 19.5 12.33 19.5 12C19.5 11.67 19.47 11.35 19.43 11.03L21.54 9.47C21.73 9.33 21.78 9.07 21.66 8.88L19.53 5.11C19.41 4.93 19.15 4.9 18.96 5.05L16.43 7.05C15.96 6.64 15.43 6.31 14.87 6.04L14.5 3.54C14.47 3.28 14.25 3.05 13.98 3.05H10.02C9.75 3.05 9.53 3.28 9.5 3.54L9.13 6.04C8.57 6.31 8.04 6.64 7.57 7.05L5.04 5.05C4.85 4.9 4.59 4.93 4.47 5.11L2.34 8.88C2.22 9.07 2.27 9.33 2.46 9.47L4.57 11.03C4.53 11.35 4.5 11.67 4.5 12C4.5 12.33 4.53 12.65 4.57 12.97L2.46 14.53C2.27 14.67 2.22 14.93 2.34 15.12L4.47 18.89C4.59 19.07 4.85 19.1 5.04 18.95L7.57 16.95C8.04 17.36 8.57 17.69 9.13 17.96L9.5 20.46C9.53 20.72 9.75 20.95 10.02 20.95H13.98C14.25 20.95 14.47 20.72 14.5 20.46L14.87 17.96C15.43 17.69 15.96 17.36 16.43 16.95L18.96 18.95C19.15 19.1 19.41 19.07 19.53 18.89L21.66 15.12C21.78 14.93 21.73 14.67 21.54 14.53L19.43 12.97Z" /></svg>
+                    </span>
+                    Help & Settings
+                </a>
+            </nav>
+             <!-- Profile navigation added for better UX -->
+            <div class="p-4 border-t border-slate-700">
+                <a href="#settings" class="nav-link flex items-center p-2 text-sm font-medium rounded-md hover:bg-slate-700 hover:text-white" data-view="settings">
+                    <img src="https://placehold.co/32x32/64748b/ffffff?text=AR" class="w-8 h-8 rounded-full mr-3" alt="User Avatar">
+                    Alex Reid (Profile)
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+                 <h2 id="view-title" class="text-2xl font-semibold text-slate-800">Dashboard</h2>
+                 <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm font-medium text-slate-700">Alex Reid</p>
+                        <p class="text-xs text-slate-500">Business Manager</p>
+                    </div>
+                    <!-- User Profile section is functional for visual design -->
+                    <img src="https://placehold.co/40x40/64748b/ffffff?text=AR" class="w-10 h-10 rounded-full" alt="User Avatar">
+                 </div>
+            </header>
+
+            <div class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6 md:p-8">
+                <!-- Dashboard View -->
+                <div id="dashboard-view" class="view">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-5 rounded-lg shadow">
+                            <h3 class="font-semibold text-slate-500 text-sm">New Leads (This Month)</h3>
+                            <p class="text-3xl font-bold mt-1">128</p>
+                        </div>
+                         <div class="bg-white p-5 rounded-lg shadow">
+                            <h3 class="font-semibold text-slate-500 text-sm">Opportunity Win Rate</h3>
+                            <p class="text-3xl font-bold mt-1 text-green-600">28.4%</p>
+                        </div>
+                         <div class="bg-white p-5 rounded-lg shadow">
+                            <h3 class="font-semibold text-slate-500 text-sm">Avg. Time to Contact</h3>
+                            <p class="text-3xl font-bold mt-1">1h 12m</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
+                        <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-lg font-semibold text-slate-800 mb-4">Lead Conversion Funnel</h3>
+                             <div class="chart-container mx-auto">
+                                <canvas id="funnelChart"></canvas>
+                             </div>
+                        </div>
+                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-slate-800 mb-4">Leads by Status</h3>
+                            <div class="chart-container mx-auto">
+                                <canvas id="statusDoughnutChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                        <div class="bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-lg font-semibold text-slate-800 mb-4">Lead Conversion Rate (LCR) by Source</h3>
+                             <div class="chart-container mx-auto">
+                                <canvas id="lcrChart"></canvas>
+                             </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-slate-800 mb-4">Cost Per Acquisition (CPA) by Source</h3>
+                            <div class="chart-container mx-auto">
+                                <canvas id="cpaChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leads View -->
+                <div id="leads-view" class="view hidden">
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="p-4 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div class="relative w-full md:w-1/3">
+                                <input id="lead-search" type="text" placeholder="Search leads by name..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 w-full md:w-auto">
+                                <select id="status-filter" class="border border-slate-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Statuses</option>
+                                    <option value="New">New</option>
+                                    <option value="Contacted">Contacted</option>
+                                    <option value="Qualified">Qualified</option>
+                                    <option value="Bad Timing">Bad Timing</option>
+                                    <option value="Lost">Lost</option>
+                                </select>
+                                <select id="source-filter" class="border border-slate-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="all">All Sources</option>
+                                    <option value="Website">Website</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="Google">Google</option>
+                                    <option value="Offline Event">Offline Event</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-slate-500">
+                                <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Lead Name</th>
+                                        <th scope="col" class="px-6 py-3">Status</th>
+                                        <th scope="col" class="px-6 py-3">Lead Score</th>
+                                        <th scope="col" class="px-6 py-3">Vehicle Interest</th>
+                                        <th scope="col" class="px-6 py-3">Source</th>
+                                        <th scope="col" class="px-6 py-3">Last Activity</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leads-table-body">
+                                    <!-- Rows will be injected by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                         <div id="no-results" class="hidden text-center py-12 text-slate-500">
+                            <p>No leads found matching your criteria.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Automation View -->
+                <div id="automation-view" class="view hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-lg font-semibold mb-2">Gated Qualification Modal</h3>
+                             <p class="text-sm text-slate-600">Ensures data integrity by requiring sales reps to input Budget, Authority, Need, and Timeline (BANT) criteria before a lead can be moved to "Qualified" status. This guarantees high-quality data for reporting.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-lg font-semibold mb-2">VIN-Specific Auto-Response</h3>
+                             <p class="text-sm text-slate-600">When a new web lead includes a specific Vehicle Identification Number (VIN), the system instantly sends a personalized email with vehicle photos, specs, and pricing. This drastically improves engagement speed.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-lg font-semibold mb-2">Automated Lead Recovery</h3>
+                             <p class="text-sm text-slate-600">If a lead is marked "Bad Timing," the system uses the provided 'Latest Interest Date' to automatically create a high-priority follow-up task for the sales rep 30 days prior, preventing lead leakage.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-lg font-semibold mb-2">Intelligent Lead Routing</h3>
+                             <p class="text-sm text-slate-600">New leads are automatically assigned to the correct sales representative based on pre-defined rules like geographical area, model expertise, or a simple round-robin system, eliminating manual distribution.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-lg font-semibold mb-2">Action Priority Scoring</h3>
+                             <p class="text-sm text-slate-600">Leads are dynamically scored based on their source, engagement, and time since last contact. The lead list is auto-sorted to surface the most urgent leads first, optimizing the sales team's time.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-lg font-semibold mb-2">Rapid Communication Logging</h3>
+                             <p class="text-sm text-slate-600">A streamlined call logging interface requires only two inputs: Outcome (e.g., Connected, Voicemail) and a brief summary. This reduces administrative friction and encourages consistent data entry.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW: Help & Settings View -->
+                <div id="settings-view" class="view hidden">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-6">Settings & Support</h2>
+                    
+                    <!-- Profile & Account Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-xl font-semibold mb-4 border-b pb-2">User Profile & Preferences</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-4">
+                                     <img src="https://placehold.co/80x80/64748b/ffffff?text=AR" class="w-20 h-20 rounded-full" alt="User Avatar">
+                                     <div>
+                                        <p class="text-lg font-medium">Alex Reid</p>
+                                        <p class="text-sm text-slate-500">Business Manager, Sales Team A</p>
+                                        <button class="text-blue-600 hover:text-blue-800 text-sm mt-1">Change Avatar</button>
+                                     </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700">Email</label>
+                                    <input type="email" value="alex.reid@hsrmotors.com" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" readonly>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700">Default Landing View</label>
+                                    <select class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+                                        <option>Dashboard</option>
+                                        <option>Leads View</option>
+                                        <option>Automation Hub</option>
+                                    </select>
+                                </div>
+                                <div class="pt-2">
+                                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-150">Save Preferences</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Help/Documentation Section -->
+                        <div class="bg-white p-6 rounded-lg shadow">
+                             <h3 class="text-xl font-semibold mb-4 border-b pb-2">Help & Documentation</h3>
+                             <div class="space-y-4">
+                                 <a href="#" class="block text-blue-600 hover:text-blue-800 font-medium border-b border-dashed pb-2">
+                                     LeadStream User Manual (PDF)
+                                </a>
+                                 <a href="#" class="block text-blue-600 hover:text-blue-800 font-medium border-b border-dashed pb-2">
+                                     FAQ: AI Drafting & Summarization
+                                </a>
+                                <div class="pt-2">
+                                     <p class="text-sm text-slate-600 mb-2">Need immediate help? Open a ticket:</p>
+                                     <button class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md shadow transition duration-150">Contact Technical Support</button>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Information -->
+                    <div class="mt-8 bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold mb-4 border-b pb-2">System Information</h3>
+                        <p class="text-sm text-slate-600">Application Version: 2.1.0 (Build 2024.09.08)</p>
+                        <p class="text-sm text-slate-600">AI Model Version: gemini-2.5-flash-preview-05-20</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Lead Detail Slide-in Panel -->
+    <div id="leadDetailPanel" class="fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b">
+            <h3 id="panel-lead-name" class="text-xl font-semibold">Lead Details</h3>
+            <button id="closePanelBtn" class="p-2 rounded-full hover:bg-slate-100">
+                <svg class="w-6 h-6 text-slate-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto">
+             <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50">
+                <div>
+                    <label class="text-xs font-semibold text-slate-500">Email</label>
+                    <p id="panel-lead-email" class="text-sm"></p>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-500">Phone</label>
+                    <p id="panel-lead-phone" class="text-sm"></p>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-500">Lead Source</label>
+                    <p id="panel-lead-source" class="text-sm"></p>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-500">Assigned To</label>
+                    <p id="panel-lead-owner" class="text-sm"></p>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-base font-semibold">Activity Timeline</h4>
+                    <button id="summarizeActivityBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium py-1.5 px-3 rounded-full shadow transition duration-150">
+                        ✨ Summarize Activity
+                    </button>
+                </div>
+                <div id="activity-summary-area" class="mt-2 p-4 bg-yellow-50 rounded-lg border border-yellow-200 hidden">
+                    <p class="text-xs font-medium text-yellow-800 mb-1">AI Summary:</p>
+                    <p id="activity-summary-text" class="text-sm text-yellow-900"></p>
+                    <div id="summary-loading" class="text-center hidden">
+                        <div class="animate-spin spinner inline-block w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full mr-2"></div>
+                        <span class="text-sm text-indigo-500">Generating summary...</span>
+                    </div>
+                </div>
+                <div id="panel-lead-activity" class="space-y-4 mt-4">
+                    <!-- Activity items injected by JS -->
+                </div>
+            </div>
+
+            <div class="p-6 border-t bg-slate-50">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-base font-semibold">Drafting Tool</h4>
+                    <button id="draftEmailBtn" class="bg-green-500 hover:bg-green-600 text-white text-xs font-medium py-1.5 px-3 rounded-full shadow transition duration-150">
+                        ✨ Draft Follow-up Email
+                    </button>
+                </div>
+                
+                <div id="email-draft-area" class="p-4 bg-white rounded-lg border border-slate-200">
+                    <div id="draft-loading" class="text-center hidden py-4">
+                        <div class="animate-spin spinner inline-block w-6 h-6 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                        <p class="text-sm text-green-600">Drafting professional email...</p>
+                    </div>
+                    <textarea id="generated-email-draft" rows="8" class="w-full text-sm text-slate-700 p-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Click '✨ Draft Follow-up Email' to generate a personalized message."></textarea>
+                    <button id="copyEmailBtn" class="mt-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium py-2 px-4 rounded-md hidden">Copy to Clipboard</button>
+                    <p id="copy-message" class="text-xs text-green-600 mt-2 hidden">Copied!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
+    // NOTE: The API_KEY is intentionally empty. The canvas environment provides the key at runtime.
+    const API_KEY = ""; 
+    const MAX_RETRIES = 3;
+    
+    const views = {
+        dashboard: document.getElementById('dashboard-view'),
+        leads: document.getElementById('leads-view'),
+        automation: document.getElementById('automation-view'),
+        settings: document.getElementById('settings-view'), // ADDED: New settings view
+    };
+    const navLinks = document.querySelectorAll('.nav-link');
+    const viewTitle = document.getElementById('view-title');
+    const leadDetailPanel = document.getElementById('leadDetailPanel');
+    const closePanelBtn = document.getElementById('closePanelBtn');
+    
+    const draftEmailBtn = document.getElementById('draftEmailBtn');
+    const summarizeActivityBtn = document.getElementById('summarizeActivityBtn');
+    const draftLoading = document.getElementById('draft-loading');
+    const summaryLoading = document.getElementById('summary-loading');
+    const generatedEmailDraft = document.getElementById('generated-email-draft');
+    const activitySummaryArea = document.getElementById('activity-summary-area');
+    const activitySummaryText = document.getElementById('activity-summary-text');
+    const copyEmailBtn = document.getElementById('copyEmailBtn');
+    const copyMessage = document.getElementById('copy-message');
+
+    let currentLead = null;
+
+    const leadsData = [
+        { id: 1, name: 'John Doe', status: 'New', score: 92, interest: 'SUV Model X', source: 'Website', lastActivity: '2 hours ago', email: 'john.d@example.com', phone: '555-1234', owner: 'Sarah Chen', activity: [
+            { type: 'created', date: '2024-09-01', detail: 'Initial lead created from the Website form (High Intent: SUV Model X).' },
+            { type: 'call', date: '2024-09-01', detail: 'Logged call with outcome: Voicemail left. Needs follow-up within 24h.' },
+            { type: 'email', date: '2024-09-02', detail: 'Sent VIN-specific auto-response email with pricing sheet. Email opened 3 times.' }
+        ]},
+        { id: 2, name: 'Jane Smith', status: 'Contacted', score: 78, interest: 'Sedan Model S', source: 'Facebook', lastActivity: '1 day ago', email: 'jane.s@example.com', phone: '555-5678', owner: 'David Lee', activity: [
+            { type: 'created', date: '2024-08-20', detail: 'Lead generated via Facebook ad campaign (low intent, focused on Sedan S marketing).' },
+            { type: 'call', date: '2024-08-22', detail: 'Logged call with outcome: Connected. Discussed budget of $35k. Needs to confirm trade-in details.' },
+            { type: 'task', date: '2024-08-25', detail: 'Completed trade-in value request. Sent appraisal to client.' },
+            { type: 'email', date: '2024-08-30', detail: 'Client replied, stated timing is tight due to current lease. Target purchase date is now December.' }
+        ]},
+        { id: 3, name: 'Mike Williams', status: 'Qualified', score: 85, interest: 'Truck Model T', source: 'Google', lastActivity: '3 days ago', email: 'mike.w@example.com', phone: '555-9012', owner: 'Sarah Chen', activity: [
+            { type: 'created', date: '2024-09-05', detail: 'Lead from Google Search (high intent, model T keyword).' },
+            { type: 'call', date: '2024-09-06', detail: 'Successfully qualified BANT: Budget $60k, Authority Yes, Need Towing, Timeline 30 days.' },
+            { type: 'email', date: '2024-09-07', detail: 'Sent financing options. Awaiting reply on preferred rate.' }
+        ]},
+        { id: 4, name: 'Emily Brown', status: 'New', score: 95, interest: 'Crossover Model C', source: 'Website', lastActivity: '30 minutes ago', email: 'emily.b@example.com', phone: '555-3456', owner: 'David Lee', activity: [
+            { type: 'created', date: '2024-09-08', detail: 'Fresh lead from website, expressed interest in Crossover Model C.' }
+        ]},
+        { id: 5, name: 'Chris Johnson', status: 'Lost', score: 40, interest: 'Sedan Model S', source: 'Facebook', lastActivity: '1 week ago', email: 'chris.j@example.com', phone: '555-7890', owner: 'Sarah Chen', activity: [
+            { type: 'created', date: '2024-08-01', detail: 'Lead from Facebook.' },
+            { type: 'call', date: '2024-08-05', detail: 'Client stated they purchased a competing vehicle. Status changed to Lost.' }
+        ]},
+        { id: 6, name: 'Olivia Davis', status: 'Qualified', score: 88, interest: 'SUV Model X', source: 'Offline Event', lastActivity: '5 days ago', email: 'olivia.d@example.com', phone: '555-2345', owner: 'David Lee', activity: [
+            { type: 'created', date: '2024-09-01', detail: 'Lead captured at local Auto Show (Offline Event).' },
+            { type: 'call', date: '2024-09-02', detail: 'Qualified. Looking for a family vehicle. Timeline is flexible, but ready to move forward soon.' },
+            { type: 'email', date: '2024-09-03', detail: 'Sent brochure and test drive invitation. No response yet.' }
+        ]},
+        { id: 7, name: 'Daniel Miller', status: 'Bad Timing', score: 65, interest: 'Truck Model T', source: 'Google', lastActivity: '2 weeks ago', email: 'daniel.m@example.com', phone: '555-6789', owner: 'Sarah Chen', activity: [
+            { type: 'created', date: '2024-08-15', detail: 'Lead from Google Search.' },
+            { type: 'call', date: '2024-08-16', detail: 'Logged call with outcome: Client interested but cannot buy for 6 months due to relocation. Status set to Bad Timing.' }
+        ]},
+        { id: 8, name: 'Sophia Wilson', status: 'Contacted', score: 72, interest: 'Crossover Model C', source: 'Website', lastActivity: '2 days ago', email: 'sophia.w@example.com', phone: '555-1235', owner: 'David Lee', activity: [
+            { type: 'created', date: '2024-09-04', detail: 'Lead from website.' },
+            { type: 'email', date: '2024-09-05', detail: 'Sent initial contact email. Opened 1 time.' },
+            { type: 'call', date: '2024-09-06', detail: 'Connected. Client is comparing Crossover models. Needs a comparison sheet.' }
+        ]},
+    ];
+
+    let charts = {};
+
+    function switchView(viewName) {
+        // 1. Hide all views
+        Object.values(views).forEach(view => view.classList.add('hidden'));
+        
+        // 2. Show the target view and update the title
+        if (views[viewName]) {
+            views[viewName].classList.remove('hidden');
+            const titleMap = {
+                dashboard: 'Dashboard',
+                leads: 'Leads',
+                automation: 'Automation Hub',
+                settings: 'Help & Settings'
+            };
+            viewTitle.textContent = titleMap[viewName];
+            
+            if(viewName === 'leads') {
+                renderLeadsTable(leadsData);
+            }
+            if(viewName === 'dashboard') {
+                initDashboardCharts();
+            }
+        }
+
+        // 3. Update navigation link styling (Fix for navigation not working)
+        navLinks.forEach(link => {
+            const linkView = link.dataset.view;
+            if (linkView === viewName) {
+                link.classList.add('bg-slate-700', 'text-white');
+            } else {
+                link.classList.remove('bg-slate-700', 'text-white');
+            }
+        });
+        
+        // Update hash for deep linking (optional, but good practice)
+        window.location.hash = viewName;
+    }
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const viewName = e.currentTarget.dataset.view;
+            switchView(viewName);
+        });
+    });
+
+    closePanelBtn.addEventListener('click', () => {
+        leadDetailPanel.classList.remove('open');
+    });
+
+    function renderLeadsTable(data) {
+        const tableBody = document.getElementById('leads-table-body');
+        const noResults = document.getElementById('no-results');
+        tableBody.innerHTML = '';
+        if (data.length === 0) {
+            noResults.classList.remove('hidden');
+            return;
+        }
+        noResults.classList.add('hidden');
+
+        data.forEach(lead => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-slate-50 cursor-pointer';
+            row.dataset.leadId = lead.id;
+            const statusClass = `bg-status-${lead.status.toLowerCase().replace(' ', '')}`;
+            
+            row.innerHTML = `
+                <td class="px-6 py-4 font-medium text-slate-900">${lead.name}</td>
+                <td class="px-6 py-4"><span class="status-pill ${statusClass}">${lead.status}</span></td>
+                <td class="px-6 py-4">${lead.score}</td>
+                <td class="px-6 py-4">${lead.interest}</td>
+                <td class="px-6 py-4">${lead.source}</td>
+                <td class="px-6 py-4">${lead.lastActivity}</td>
+            `;
+            row.addEventListener('click', () => showLeadDetails(lead.id));
+            tableBody.appendChild(row);
+        });
+    }
+
+    function showLeadDetails(leadId) {
+        currentLead = leadsData.find(l => l.id === leadId);
+        if (!currentLead) return;
+
+        document.getElementById('panel-lead-name').textContent = currentLead.name;
+        document.getElementById('panel-lead-email').textContent = currentLead.email;
+        document.getElementById('panel-lead-phone').textContent = currentLead.phone;
+        document.getElementById('panel-lead-source').textContent = currentLead.source;
+        document.getElementById('panel-lead-owner').textContent = currentLead.owner;
+        
+        const activityContainer = document.getElementById('panel-lead-activity');
+        activityContainer.innerHTML = '';
+        
+        currentLead.activity.forEach(item => {
+            const activityIcon = item.type === 'created' ? '📝' : item.type === 'call' ? '📞' : item.type === 'email' ? '📧' : '✅';
+            const activityDiv = document.createElement('div');
+            activityDiv.className = 'activity-item text-sm text-slate-800';
+            activityDiv.innerHTML = `<span class="font-bold mr-2">${activityIcon} ${item.date}:</span> ${item.detail}`;
+            activityContainer.appendChild(activityDiv);
+        });
+
+        // Reset AI sections
+        generatedEmailDraft.value = 'Click \'✨ Draft Follow-up Email\' to generate a personalized message.';
+        draftLoading.classList.add('hidden');
+        activitySummaryArea.classList.add('hidden');
+        copyEmailBtn.classList.add('hidden');
+        copyMessage.classList.add('hidden');
+        
+        leadDetailPanel.classList.add('open');
+    }
+
+    async function exponentialBackoffFetch(url, payload, retries = 0) {
+        const delay = Math.pow(2, retries) * 1000;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.status === 429 && retries < MAX_RETRIES) {
+                console.warn(`Rate limit exceeded. Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return exponentialBackoffFetch(url, payload, retries + 1);
+            }
+            if (!response.ok) {
+                // Try to read error body if available
+                const errorBody = await response.text();
+                throw new Error(`API request failed with status ${response.status}. Response: ${errorBody.substring(0, 100)}...`);
+            }
+            return response.json();
+        } catch (error) {
+            if (retries < MAX_RETRIES) {
+                // No console.error here to suppress internal retries
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return exponentialBackoffFetch(url, payload, retries + 1);
+            }
+            console.error("Final API request failed:", error);
+            throw new Error(`API failed after ${MAX_RETRIES} retries. Check console for details.`);
+        }
+    }
+    
+    async function callGeminiApi(systemPrompt, userQuery) {
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+        };
+        const apiUrl = `${GEMINI_API_URL}?key=${API_KEY}`;
+        
+        try {
+            const result = await exponentialBackoffFetch(apiUrl, payload);
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+                return text.trim();
+            } else {
+                throw new Error("No text content found in API response. This may indicate an issue with the model's output.");
+            }
+        } catch (error) {
+            // Enhanced error reporting (Fix for AI features not working)
+            console.error("Gemini API Error during generation:", error);
+            return `
+[AI GENERATION FAILED]
+
+There was an issue contacting the AI service. 
+Please check the browser console (F12) for detailed error messages.
+Error: ${error.message}
+`;
+        }
+    }
+
+    async function generateFollowUpEmail() {
+        if (!currentLead) return;
+
+        generatedEmailDraft.value = '';
+        draftLoading.classList.remove('hidden');
+        copyEmailBtn.classList.add('hidden');
+        copyMessage.classList.add('hidden');
+
+        const leadContext = `Name: ${currentLead.name}, Interest: ${currentLead.interest}, Status: ${currentLead.status}, Source: ${currentLead.source}`;
+        const activityLog = currentLead.activity.map(a => `${a.date}: ${a.detail}`).join('\n');
+        
+        const systemPrompt = "You are a professional, helpful, and concise sales assistant for HSR Motors. Your task is to draft a follow-up email. The tone should be warm, confident, and focused on securing the next action (e.g., test drive, appointment). Do not include a subject line. Do not use markdown. Start directly with 'Dear [Name],' and end with 'Best regards, [Your Name]'.";
+        const userQuery = `Draft a follow-up email for the following sales lead. Use the current lead status to determine the next step, and reference their vehicle interest. Context:\n${leadContext}\n\nActivity Log:\n${activityLog}`;
+
+        const draft = await callGeminiApi(systemPrompt, userQuery);
+
+        draftLoading.classList.add('hidden');
+        generatedEmailDraft.value = draft;
+        
+        if (!draft.includes('[AI GENERATION FAILED]')) {
+             copyEmailBtn.classList.remove('hidden');
+        }
+    }
+    
+    async function summarizeLeadActivity() {
+        if (!currentLead) return;
+        
+        activitySummaryArea.classList.remove('hidden');
+        activitySummaryText.textContent = '';
+        summaryLoading.classList.remove('hidden');
+
+        const activityLog = currentLead.activity.map(a => `${a.date}: ${a.detail}`).join('\n');
+        
+        const systemPrompt = "You are a concise AI assistant. Summarize the following lead activity log into one paragraph that highlights the key events, the current status, and the most recent required next action for the sales representative. Do not use bullet points or lists.";
+        const userQuery = `Summarize the following activity log for lead ${currentLead.name} (Current Status: ${currentLead.status}):\n${activityLog}`;
+
+        const summary = await callGeminiApi(systemPrompt, userQuery);
+
+        summaryLoading.classList.add('hidden');
+        
+        if (summary.includes('[AI GENERATION FAILED]')) {
+             activitySummaryText.textContent = "Could not generate summary. See error details below.";
+             activitySummaryArea.classList.add('bg-red-50', 'border-red-200');
+             activitySummaryArea.innerHTML += `<pre class="mt-2 p-2 bg-red-100 rounded text-xs text-red-900 overflow-x-auto">${summary}</pre>`;
+        } else {
+             activitySummaryText.textContent = summary;
+             activitySummaryArea.classList.remove('bg-red-50', 'border-red-200');
+        }
+    }
+
+    function copyDraftToClipboard() {
+        // Use the deprecated but reliable document.execCommand('copy') for iframe environments
+        generatedEmailDraft.select();
+        try {
+            document.execCommand('copy');
+            copyMessage.textContent = 'Copied!';
+            copyMessage.classList.remove('hidden', 'text-red-600');
+            copyMessage.classList.add('text-green-600');
+        } catch (err) {
+            console.error('Could not copy to clipboard:', err);
+            copyMessage.textContent = 'Failed to copy!';
+            copyMessage.classList.remove('hidden', 'text-green-600');
+            copyMessage.classList.add('text-red-600');
+        }
+
+        setTimeout(() => copyMessage.classList.add('hidden'), 2000);
+    }
+
+
+    draftEmailBtn.addEventListener('click', generateFollowUpEmail);
+    summarizeActivityBtn.addEventListener('click', summarizeLeadActivity);
+    copyEmailBtn.addEventListener('click', copyDraftToClipboard);
+
+    function filterLeads() {
+        const searchTerm = document.getElementById('lead-search').value.toLowerCase();
+        const statusFilter = document.getElementById('status-filter').value;
+        const sourceFilter = document.getElementById('source-filter').value;
+
+        const filteredData = leadsData.filter(lead => {
+            const nameMatch = lead.name.toLowerCase().includes(searchTerm);
+            const statusMatch = statusFilter === 'all' || lead.status === statusFilter;
+            const sourceMatch = sourceFilter === 'all' || lead.source === sourceFilter;
+            return nameMatch && statusMatch && sourceMatch;
+        });
+
+        renderLeadsTable(filteredData);
+    }
+    document.getElementById('lead-search').addEventListener('input', filterLeads);
+    document.getElementById('status-filter').addEventListener('change', filterLeads);
+    document.getElementById('source-filter').addEventListener('change', filterLeads);
+
+    function initDashboardCharts() {
+        // Only initialize charts if we are on the dashboard and they don't exist yet
+        if(document.getElementById('funnelChart') && !charts.funnel) {
+             const funnelCtx = document.getElementById('funnelChart').getContext('2d');
+             charts.funnel = new Chart(funnelCtx, {
+                 type: 'bar',
+                 data: {
+                     labels: ['New (MQL)', 'Contacted', 'Qualified (SQL)', 'Opportunity', 'Closed Won'],
+                     datasets: [{
+                         label: 'Lead Count',
+                         data: [200, 150, 90, 45, 15],
+                         backgroundColor: ['#60a5fa', '#4ade80', '#fbbf24', '#f87171', '#34d399'],
+                         borderColor: '#ffffff',
+                         borderWidth: 2,
+                         barPercentage: 1.0,
+                         categoryPercentage: 0.7
+                     }]
+                 },
+                 options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     indexAxis: 'y',
+                     plugins: { legend: { display: false } },
+                     scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
+                 }
+             });
+        }
+        
+        if(document.getElementById('statusDoughnutChart') && !charts.statusDoughnut) {
+             const statusDoughnutCtx = document.getElementById('statusDoughnutChart').getContext('2d');
+             charts.statusDoughnut = new Chart(statusDoughnutCtx, {
+                 type: 'doughnut',
+                 data: {
+                     labels: ['New', 'Contacted', 'Qualified', 'Lost', 'Bad Timing'],
+                     datasets: [{
+                         data: [45, 60, 35, 12, 18],
+                         backgroundColor: ['#dbeafe', '#ffedd5', '#d1fae5', '#fee2e2', '#e0e7ff'],
+                         borderColor: ['#1e40af', '#9a3412', '#065f46', '#991b1b', '#4338ca'],
+                         borderWidth: 1.5
+                     }]
+                 },
+                 options: {
+                     responsive: true,
+                     maintainAspectRatio: false,
+                     plugins: { legend: { position: 'bottom' } }
+                 }
+             });
+        }
+
+        if(document.getElementById('lcrChart') && !charts.lcr) {
+             const lcrCtx = document.getElementById('lcrChart').getContext('2d');
+             charts.lcr = new Chart(lcrCtx, {
+                  type: 'bar',
+                  data: {
+                     labels: ['Website', 'Google', 'Facebook', 'Offline Event'],
+                     datasets: [{
+                         label: 'Conversion Rate (%)',
+                         data: [15, 12, 8, 25],
+                         backgroundColor: '#60a5fa',
+                     }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      indexAxis: 'y',
+                      plugins: { legend: { display: false } },
+                      scales: { x: { beginAtZero: true, grid: { drawOnChartArea: false } }, y: { grid: { display: false } } }
+                  }
+             });
+        }
+        
+        if(document.getElementById('cpaChart') && !charts.cpa) {
+             const cpaCtx = document.getElementById('cpaChart').getContext('2d');
+             charts.cpa = new Chart(cpaCtx, {
+                  type: 'bar',
+                  data: {
+                     labels: ['Website', 'Google', 'Facebook', 'Offline Event'],
+                     datasets: [{
+                         label: 'Cost Per Acquisition ($)',
+                         data: [250, 400, 550, 150],
+                         backgroundColor: '#f87171',
+                     }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      indexAxis: 'y',
+                      plugins: { legend: { display: false } },
+                      scales: { x: { beginAtZero: true, grid: { drawOnChartArea: false } }, y: { grid: { display: false } } }
+                  }
+             });
+        }
+    }
+
+    // Initialize the correct view based on the URL hash or default to dashboard
+    const initialView = window.location.hash.substring(1) || 'dashboard';
+    switchView(initialView);
+});
+</script>
+</body>
+</html>
